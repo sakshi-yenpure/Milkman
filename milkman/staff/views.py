@@ -8,10 +8,20 @@ from rest_framework.permissions import IsAuthenticated
 
 
 # Create your views here.
-from .models import Staff
-from .serializers import StaffSerializer
+from .models import Staff, EmployeeActivity
+from .serializers import StaffSerializer, EmployeeActivitySerializer
 from .auth import create_token, StaffTokenAuthentication
+from milkman.views import add_activity
 
+def log_employee_activity(email, action):
+    EmployeeActivity.objects.create(email=email, action=action)
+    add_activity(email, f"Staff {action}")
+
+class EmployeeActivityListView(APIView):
+    def get(self, request):
+        activities = EmployeeActivity.objects.all().order_by('-timestamp')[:20]
+        serializer = EmployeeActivitySerializer(activities, many=True)
+        return Response(serializer.data)
 
 class StaffViewSet(APIView):
     authentication_classes = [StaffTokenAuthentication]
@@ -71,4 +81,26 @@ class LoginView(APIView):
             staff.is_active = True
             staff.save(update_fields=["password", "is_active"])
         token = create_token(staff)
-        return Response({"token": token, "staff_id": staff.pk, "email": staff.email})
+        log_employee_activity(staff.email, "Logged in")
+        return Response({"token": token, "staff_id": staff.pk, "email": staff.email, "name": staff.name})
+
+class StaffSignupView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, format=None):
+        serializer = StaffSerializer(data=request.data)
+        if serializer.is_valid():
+            staff = serializer.save()
+            token = create_token(staff)
+            add_activity(staff.email, "Staff Signed up")
+            log_employee_activity(staff.email, "Signed up")
+            return Response({"token": token, "staff_id": staff.pk, "email": staff.email, "name": staff.name}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class StaffLogoutView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        if email:
+            log_employee_activity(email, "Logged out")
+        return Response(status=status.HTTP_200_OK)

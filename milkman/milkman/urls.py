@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from django.views.generic import TemplateView
+from .views import HomeView
+from chatbot.views import ChatbotView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,5 +26,6 @@ urlpatterns = [
     path('category/', include('category.urls')),
     path('product/', include('product.urls')),
     path('subscription/', include('subscription.urls')),
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('chatbot/', ChatbotView.as_view(), name='chatbot'),
+    path('', HomeView.as_view(), name='home'),
 ]

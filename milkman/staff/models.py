@@ -15,3 +15,11 @@ class Staff(models.Model):
     @property
     def is_authenticated(self):
         return True
+
+class EmployeeActivity(models.Model):
+    email = models.EmailField(max_length=100)
+    action = models.CharField(max_length=100)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email} - {self.action} at {self.timestamp}"

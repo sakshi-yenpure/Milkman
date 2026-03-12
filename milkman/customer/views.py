@@ -6,6 +6,7 @@ from .models import Customer
 from .serializers import CustomerSerializer
 from staff.auth import StaffTokenAuthentication
 from .auth import create_token
+from milkman.views import add_activity
 
 class CustomerViewSet(APIView):
     authentication_classes = [StaffTokenAuthentication]
@@ -51,6 +52,7 @@ class CustomerLoginView(APIView):
         except Customer.DoesNotExist:
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         token = create_token(customer)
+        add_activity(customer.email, "Logged in")
         return Response({"token": token, "customer_id": customer.pk, "email": customer.email})
 
 
@@ -63,5 +65,6 @@ class CustomerSignupView(APIView):
         if serializer.is_valid():
             customer = serializer.save()
             token = create_token(customer)
+            add_activity(customer.email, "Signed up")
             return Response({"token": token, "customer_id": customer.pk, "email": customer.email}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

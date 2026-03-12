@@ -24,7 +24,7 @@ class ProductViewSet(APIView):
 
     def put(self, request, pk, format=None):
         product = Product.objects.get(pk=pk)
-        serializer = ProductSerializer(product, data=request.data)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

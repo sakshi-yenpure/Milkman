@@ -1,7 +1,18 @@
+import { Link } from 'react-router-dom'
+
 export default function Profile() {
   const customer = JSON.parse(localStorage.getItem('customer') || '{}')
-  const orders = JSON.parse(localStorage.getItem('orders') || '[]').slice().reverse()
-  const plan = JSON.parse(localStorage.getItem('subscriptionPlan') || 'null')
+  
+  // Filter orders to show only for the current user
+  const allOrders = JSON.parse(localStorage.getItem('orders') || '[]')
+  const orders = allOrders
+    .filter(o => o.billing?.customer_id == customer.id)
+    .slice()
+    .reverse()
+
+  // Fetch user-specific active subscription
+  const activeSub = JSON.parse(localStorage.getItem(`activeSubscription_${customer.id}`) || 'null')
+  
   if (!customer.id) {
     return <div className="auth-card reveal"><h2>My Profile</h2><div className="muted">Please login to view your profile.</div></div>
   }
@@ -18,18 +29,22 @@ export default function Profile() {
           <div className="card-body" style={{borderTop:'4px solid #0d6efd'}}>
             <h3>Account</h3>
             <p><strong>Email:</strong> {customer.email}</p>
+            <p><strong>Name:</strong> {customer.name || 'N/A'}</p>
           </div>
         </div>
         <div className="card glow-card reveal">
           <div className="card-body" style={{borderTop:'4px solid #5aa95d'}}>
-            <h3>Subscription</h3>
-            {plan ? (
-              <div>
-                <p><strong>Plan:</strong> {plan.plan}</p>
-                <p><strong>Preferred Slot:</strong> {plan.slot}</p>
+            <h3>Active Subscription</h3>
+            {activeSub ? (
+              <div className="sub-info">
+                <p><strong>Plan:</strong> {activeSub.plan}</p>
+                <p><strong>Price:</strong> ${activeSub.price}</p>
+                <p><strong>Slot:</strong> {activeSub.slot}</p>
+                <p><strong>Status:</strong> <span style={{color: '#2f7d32', fontWeight: 'bold'}}>{activeSub.status}</span></p>
+                <p><strong>Since:</strong> {activeSub.date}</p>
               </div>
             ) : (
-              <div className="muted">No subscription saved. Explore plans on the Subscription page.</div>
+              <div className="muted">No active subscription. <Link to="/subscription" style={{color: '#2f7d32', fontWeight: 'bold'}}>Explore plans</Link></div>
             )}
           </div>
         </div>

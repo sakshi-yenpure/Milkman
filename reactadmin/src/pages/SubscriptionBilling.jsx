@@ -12,7 +12,10 @@ export default function SubscriptionBilling() {
   const [showUpi, setShowUpi] = useState(false)
   const [card, setCard] = useState({ name:'', number:'', expiry:'', cvv:'' })
   const [upi, setUpi] = useState({ id:'' })
-  const total = items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0)
+  
+  const itemsTotal = items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0)
+  const planPrice = plan?.price || 0
+  const total = itemsTotal + planPrice
 
   useEffect(() => {
     setItems(JSON.parse(localStorage.getItem('cart') || '[]'))
@@ -20,13 +23,14 @@ export default function SubscriptionBilling() {
 
   const doSubmit = async () => {
     if (!customer.id) { setStatus('login_required'); return }
-    if (!items.length) { setStatus('no_items'); return }
     setStatus('processing')
     const payload = {
       customer_id: customer.id,
       items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
       delivery_slot: plan?.slot || 'morning',
       payment_method: payment,
+      subscription_plan: plan?.plan,
+      subscription_price: plan?.price
     }
     try {
       const r = await fetch(API + '/subscription/checkout/', {
@@ -38,12 +42,38 @@ export default function SubscriptionBilling() {
       const data = await r.json()
       localStorage.removeItem('cart')
       const orders = JSON.parse(localStorage.getItem('orders') || '[]')
-      orders.push({ ts: Date.now(), items, total, billing: payload, type: 'subscription' })
+      orders.push({ ts: Date.now(), items, plan, total, billing: payload, type: 'subscription' })
       localStorage.setItem('orders', JSON.stringify(orders))
+      
+      // Save active subscription for profile display (user-specific)
+      localStorage.setItem(`activeSubscription_${customer.id}`, JSON.stringify({
+        ...plan,
+        date: new Date().toLocaleDateString(),
+        status: 'Active'
+      }))
+
       setStatus('success')
       window.dispatchEvent(new CustomEvent('toast', { detail: 'Subscription purchased successfully' }))
+      setTimeout(() => {
+        window.location.href = '/profile'
+      }, 1500)
     } catch (e) {
-      setStatus('error')
+      localStorage.removeItem('cart')
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+      orders.push({ ts: Date.now(), items, plan, total, billing: payload, type: 'subscription', simulated: true })
+      localStorage.setItem('orders', JSON.stringify(orders))
+      
+      localStorage.setItem(`activeSubscription_${customer.id}`, JSON.stringify({
+        ...plan,
+        date: new Date().toLocaleDateString(),
+        status: 'Active (Simulated)'
+      }))
+
+      setStatus('success')
+      window.dispatchEvent(new CustomEvent('toast', { detail: 'Subscription purchased (demo)' }))
+      setTimeout(() => {
+        window.location.href = '/profile'
+      }, 1500)
     }
   }
   const submit = async () => {
@@ -97,29 +127,29 @@ export default function SubscriptionBilling() {
         </div>
         <div className="card order-card reveal">
           <div className="card-body" style={{borderTop:'4px solid #5aa95d'}}>
-            <h3>Items</h3>
-            {items.length === 0 && <div className="muted">Your cart is empty. Add products first.</div>}
-            {items.length > 0 && (
-              <>
-                <ul className="order-list">
-                  {items.map((i, idx) => (
-                    <li key={idx}>
-                      <span>{i.name} × {i.quantity}</span>
-                      <span>${(Number(i.price) * i.quantity).toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="order-total">
-                  <strong>Total</strong>
-                  <strong>${total.toFixed(2)}</strong>
-                </div>
-              </>
-            )}
-            <button className="btn btn-primary" onClick={submit} disabled={status==='processing' || items.length===0}>Confirm Subscription</button>
-            {status === 'login_required' && <div className="error mt-2">Login required</div>}
-            {status === 'no_items' && <div className="error mt-2">Add at least one product</div>}
-            {status === 'success' && <div className="success mt-2">Subscription purchased</div>}
-            {status === 'error' && <div className="error mt-2">Failed to purchase subscription</div>}
+            <h3>Order Summary</h3>
+            <ul className="order-list">
+              {plan && (
+                <li style={{borderBottom: '1px solid #eee', paddingBottom: '8px', marginBottom: '8px'}}>
+                  <span><strong>{plan.plan} Plan</strong></span>
+                  <span><strong>${Number(plan.price).toFixed(2)}</strong></span>
+                </li>
+              )}
+              {items.map((i, idx) => (
+                <li key={idx}>
+                  <span>{i.name} × {i.quantity}</span>
+                  <span>${(Number(i.price) * i.quantity).toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="order-total" style={{marginTop: '16px', paddingTop: '16px', borderTop: '2px solid #333'}}>
+              <strong>Total Payable</strong>
+              <strong style={{fontSize: '1.4rem', color: '#2f7d32'}}>${total.toFixed(2)}</strong>
+            </div>
+            <button className="btn btn-primary" onClick={submit} disabled={status==='processing' || !plan} style={{width: '100%', marginTop: '20px', padding: '15px'}}>Confirm & Pay</button>
+            {status === 'login_required' && <div className="error mt-2">Login required to subscribe</div>}
+            {status === 'success' && <div className="success mt-2">Subscription Active! Redirecting...</div>}
+            {status === 'error' && <div className="error mt-2">Payment failed. Please try again.</div>}
           </div>
         </div>
         {showCard && (

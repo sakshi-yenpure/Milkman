@@ -4,8 +4,18 @@ import { Link } from 'react-router-dom'
 export default function Subscription() {
   const [plan, setPlan] = useState('weekly')
   const [slot, setSlot] = useState('morning')
+  const plans = {
+    daily: { name: 'Daily Delivery', price: 29.99, desc: 'Fresh dairy delivered every day.', color: '#4e9b51' },
+    weekly: { name: 'Weekly Delivery', price: 9.99, desc: 'Deliveries once or twice a week.', color: '#0d6efd' },
+    monthly: { name: 'Monthly Saver', price: 89.99, desc: 'Full month of premium service.', color: '#fb8500' }
+  }
+
   const proceed = () => {
-    localStorage.setItem('subscriptionPlan', JSON.stringify({ plan, slot }))
+    localStorage.setItem('subscriptionPlan', JSON.stringify({ 
+      plan: plans[plan].name, 
+      price: plans[plan].price,
+      slot 
+    }))
     window.location.href = '/subscription-billing'
   }
   return (
@@ -18,55 +28,38 @@ export default function Subscription() {
         <div className="chips">
           <span className="chip">Daily</span>
           <span className="chip">Weekly</span>
-          <span className="chip">Custom</span>
+          <span className="chip">Monthly</span>
         </div>
       </div>
       <div className="grid">
-        <div className={`card glow-card ${plan==='daily' ? 'selected' : ''} reveal`}>
-          <div className="card-body" style={{borderTop:'4px solid #4e9b51'}}>
-            <h3>Daily Delivery</h3>
-            <p className="muted">Fresh dairy delivered every day.</p>
-            <ul>
-              <li>Best freshness</li>
-              <li>Flexible quantities</li>
-            </ul>
-            <button className="btn btn-secondary" onClick={() => setPlan('daily')}>Select</button>
+        {Object.entries(plans).map(([key, p]) => (
+          <div key={key} className={`card glow-card ${plan === key ? 'selected' : ''} reveal`}>
+            <div className="card-body" style={{ borderTop: `4px solid ${p.color}` }}>
+              <h3>{p.name}</h3>
+              <p className="price" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2f7d32' }}>${p.price}</p>
+              <p className="muted">{p.desc}</p>
+              <ul>
+                <li>Priority delivery</li>
+                <li>Exclusive discounts</li>
+              </ul>
+              <button className="btn btn-secondary" onClick={() => setPlan(key)}>Select Plan</button>
+            </div>
           </div>
-        </div>
-        <div className={`card glow-card ${plan==='weekly' ? 'selected' : ''} reveal`}>
-          <div className="card-body" style={{borderTop:'4px solid #0d6efd'}}>
-            <h3>Weekly Delivery</h3>
-            <p className="muted">Deliveries once or twice a week.</p>
-            <ul>
-              <li>Great for planning</li>
-              <li>Easy to reschedule</li>
-            </ul>
-            <button className="btn btn-secondary" onClick={() => setPlan('weekly')}>Select</button>
-          </div>
-        </div>
-        <div className={`card glow-card ${plan==='custom' ? 'selected' : ''} reveal`}>
-          <div className="card-body" style={{borderTop:'4px solid #fb8500'}}>
-            <h3>Custom Schedule</h3>
-            <p className="muted">Pick specific days and quantities.</p>
-            <ul>
-              <li>Maximum flexibility</li>
-              <li>Tailored to your needs</li>
-            </ul>
-            <button className="btn btn-secondary" onClick={() => setPlan('custom')}>Select</button>
-          </div>
-        </div>
+        ))}
       </div>
-      <div style={{marginTop:16}} className="card glow-card reveal">
-        <div className="card-body" style={{borderTop:'4px solid #5aa95d'}}>
-          <h3>Preferences</h3>
+      <div style={{ marginTop: 16 }} className="card glow-card reveal">
+        <div className="card-body" style={{ borderTop: '4px solid #5aa95d' }}>
+          <h3>Delivery Preferences</h3>
           <div className="form-grid">
-            <select value={slot} onChange={e=>setSlot(e.target.value)}>
+            <select value={slot} onChange={e => setSlot(e.target.value)}>
               <option value="morning">Morning (7–10 AM)</option>
               <option value="afternoon">Afternoon (1–4 PM)</option>
               <option value="evening">Evening (6–9 PM)</option>
             </select>
-            <Link className="btn btn-primary" to="/products">Add Products</Link>
-            <button className="btn btn-secondary" onClick={proceed}>Proceed to Subscription Billing</button>
+            <div className="sub-actions" style={{ display: 'flex', gap: '10px' }}>
+              <Link className="btn btn-primary" to="/products">Add Products</Link>
+              <button className="btn btn-secondary" onClick={proceed}>Proceed to Billing</button>
+            </div>
           </div>
         </div>
       </div>

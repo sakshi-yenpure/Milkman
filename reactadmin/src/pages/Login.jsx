@@ -21,13 +21,13 @@ export default function Login() {
       if (!r.ok) throw new Error(data.detail || 'Login failed')
       localStorage.setItem('customerToken', data.token)
       localStorage.setItem('customer', JSON.stringify({ id: data.customer_id, email: data.email }))
-      window.location.href = '/products'
+      window.location.href = '/admin-dashboard'
     } catch (e) {
       const token = 'demo-' + Math.random().toString(36).slice(2)
       localStorage.setItem('customerToken', token)
       localStorage.setItem('customer', JSON.stringify({ id: Date.now(), email }))
       window.dispatchEvent(new CustomEvent('toast', { detail: 'Logged in (demo)' }))
-      window.location.href = '/products'
+      window.location.href = '/admin-dashboard'
     }
   }
 

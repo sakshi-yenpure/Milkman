@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'category',
     'product',
     'subscription',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
